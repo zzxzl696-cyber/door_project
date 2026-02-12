@@ -1,0 +1,85 @@
+{
+    // C/C++配置
+    "C_Cpp.errorSquiggles": "disabled",
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+
+    // ========== UTF-8编码配置（核心） ==========
+    // 强制所有文件使用UTF-8编码打开和保存
+    "files.encoding": "utf8",
+    // 禁用自动猜测编码（避免误判）
+    "files.autoGuessEncoding": false,
+    // 新文件默认使用UTF-8编码
+    "files.defaultEncoding": "utf8",
+
+    // 行尾符配置（Unix格式：LF）
+    "files.eol": "\n",
+
+    // 针对C/C++文件的特定编码设置
+    "[c]": {
+        "files.encoding": "utf8",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+    },
+    "[cpp]": {
+        "files.encoding": "utf8",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+    },
+    "[h]": {
+        "files.encoding": "utf8",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+    },
+
+    // Markdown文件UTF-8编码
+    "[markdown]": {
+        "files.encoding": "utf8",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+
+    // JSON文件UTF-8编码
+    "[json]": {
+        "files.encoding": "utf8",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+
+    // 编辑器配置
+    "editor.tabSize": 4,
+    "editor.insertSpaces": false,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+
+    // 文件关联
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c",
+        "ch32v30x.h": "c",
+        "ch32v30x_conf.h": "c",
+        "debug.h": "c",
+        "timer_config.h": "c"
+    },
+
+    // 排除文件（不在资源管理器中显示）
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/obj": true,
+        "**/lst": true
+    },
+
+    // 搜索排除
+    "search.exclude": {
+        "**/obj": true,
+        "**/lst": true,
+        "**/*.o": true,
+        "**/*.d": true,
+        "**/*.map": true
+    }
+}

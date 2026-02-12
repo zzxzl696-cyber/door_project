@@ -1,0 +1,286 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-02-05T11:45:29+08:00",
+  "project": {
+    "name": "door_project",
+    "type": "嵌入式IoT - 智能门禁系统",
+    "platform": "CH32V307VCT6 (RISC-V 32-bit, 144MHz)",
+    "language": "C",
+    "architecture": "裸机开发, 协作式调度器"
+  },
+  "root": {
+    "path": "F:\\door_project\\door_project_1\\door_project",
+    "claude_md": "CLAUDE.md",
+    "created": "2026-02-05T11:45:29+08:00"
+  },
+  "modules": [
+    {
+      "name": "User",
+      "path": "User/",
+      "claude_md": "User/CLAUDE.md",
+      "responsibility": "用户应用代码层 - 业务逻辑、驱动程序、中间件、任务调度",
+      "language": "C",
+      "entry_points": [
+        "User/main.c",
+        "User/scheduler.c"
+      ],
+      "interfaces": [
+        "scheduler_init(), scheduler_run()",
+        "USART1_DMA_RX_FullInit()",
+        "RFID_Init(), RFID_SetWorkMode(), RFID_ReadId()",
+        "PS_HandShake(), Add_FR(), Press_FR()",
+        "door_control_init(), door_control_unlock(), door_control_lock()",
+        "LCD_Init(), LCD_ShowString()"
+      ],
+      "dependencies": [
+        "Peripheral/",
+        "Core/",
+        "Debug/"
+      ],
+      "tests": [
+        "User/uart_test.c",
+        "User/lcd_test_task.c"
+      ],
+      "config_files": [
+        "User/ch32v30x_conf.h",
+        "User/system_ch32v30x.c/h",
+        "User/bsp_system.h"
+      ],
+      "key_files": [
+        "User/main.c",
+        "User/scheduler.c/h",
+        "User/usart1_dma_rx.c/h",
+        "User/rfid_reader.c/h",
+        "User/as608.c/h",
+        "User/door_control.c/h",
+        "User/lcd.c/h",
+        "User/ringbuffer_large.c/h"
+      ],
+      "file_count": 52,
+      "status": "🔄 开发中"
+    },
+    {
+      "name": "Peripheral",
+      "path": "Peripheral/",
+      "claude_md": null,
+      "responsibility": "CH32V30x外设库 - GPIO, UART, SPI, I2C, DMA, TIM等",
+      "language": "C",
+      "entry_points": [
+        "Peripheral/inc/ch32v30x.h"
+      ],
+      "interfaces": [
+        "GPIO_Init(), GPIO_WriteBit()",
+        "USART_Init(), USART_SendData()",
+        "SPI_Init(), SPI_I2S_SendData()",
+        "DMA_Init(), DMA_Cmd()",
+        "TIM_TimeBaseInit(), TIM_Cmd()"
+      ],
+      "dependencies": [
+        "Core/"
+      ],
+      "tests": [],
+      "config_files": [],
+      "key_files": [
+        "Peripheral/inc/ch32v30x.h",
+        "Peripheral/inc/ch32v30x_gpio.h",
+        "Peripheral/inc/ch32v30x_usart.h",
+        "Peripheral/inc/ch32v30x_spi.h",
+        "Peripheral/inc/ch32v30x_dma.h",
+        "Peripheral/inc/ch32v30x_tim.h"
+      ],
+      "file_count": 52,
+      "status": "✅ 稳定"
+    },
+    {
+      "name": "Core",
+      "path": "Core/",
+      "claude_md": null,
+      "responsibility": "RISC-V内核相关文件",
+      "language": "C",
+      "entry_points": [
+        "Core/core_riscv.c"
+      ],
+      "interfaces": [
+        "NVIC_PriorityGroupConfig()",
+        "NVIC_Init()",
+        "SystemCoreClockUpdate()"
+      ],
+      "dependencies": [],
+      "tests": [],
+      "config_files": [],
+      "key_files": [
+        "Core/core_riscv.c",
+        "Core/core_riscv.h"
+      ],
+      "file_count": 2,
+      "status": "✅ 稳定"
+    },
+    {
+      "name": "Debug",
+      "path": "Debug/",
+      "claude_md": null,
+      "responsibility": "串口调试模块 - printf重定向",
+      "language": "C",
+      "entry_points": [
+        "Debug/debug.c"
+      ],
+      "interfaces": [
+        "Delay_Init()",
+        "Delay_Ms(), Delay_Us()",
+        "USART_Printf_Init()",
+        "printf()"
+      ],
+      "dependencies": [
+        "Peripheral/"
+      ],
+      "tests": [],
+      "config_files": [],
+      "key_files": [
+        "Debug/debug.c",
+        "Debug/debug.h"
+      ],
+      "file_count": 2,
+      "status": "✅ 稳定"
+    },
+    {
+      "name": "Startup",
+      "path": "Startup/",
+      "claude_md": null,
+      "responsibility": "RISC-V启动文件 - 中断向量表、启动代码",
+      "language": "Assembly",
+      "entry_points": [
+        "Startup/startup_ch32v30x_D8.S"
+      ],
+      "interfaces": [],
+      "dependencies": [],
+      "tests": [],
+      "config_files": [],
+      "key_files": [
+        "Startup/startup_ch32v30x_D8.S",
+        "Startup/startup_ch32v30x_D8C.S"
+      ],
+      "file_count": 2,
+      "status": "✅ 稳定"
+    },
+    {
+      "name": "Ld",
+      "path": "Ld/",
+      "claude_md": null,
+      "responsibility": "链接脚本 - 内存布局定义",
+      "language": "Linker Script",
+      "entry_points": [
+        "Ld/Link.ld"
+      ],
+      "interfaces": [],
+      "dependencies": [],
+      "tests": [],
+      "config_files": [
+        "Ld/Link.ld"
+      ],
+      "key_files": [
+        "Ld/Link.ld"
+      ],
+      "file_count": 1,
+      "status": "✅ 稳定"
+    },
+    {
+      "name": "docs",
+      "path": "docs/",
+      "claude_md": null,
+      "responsibility": "项目文档 - 硬件文档、移植文档、使用指南",
+      "language": "Markdown",
+      "entry_points": [
+        "docs/README.md"
+      ],
+      "interfaces": [],
+      "dependencies": [],
+      "tests": [],
+      "config_files": [],
+      "key_files": [
+        "docs/README.md",
+        "docs/hardware_pinout.md",
+        "docs/as608_quickstart.md",
+        "docs/RFID_Quick_Start.md",
+        "docs/USART1_DMA使用说明.md"
+      ],
+      "file_count": 46,
+      "status": "🔄 持续更新"
+    }
+  ],
+  "coverage": {
+    "total_files_estimated": 160,
+    "scanned_files": 160,
+    "coverage_percentage": 100,
+    "scanned_modules": 7,
+    "documented_modules": 2,
+    "gaps": [
+      "Peripheral模块缺少CLAUDE.md（外设库，相对稳定）",
+      "Core模块缺少CLAUDE.md（内核文件，无需详细文档）",
+      "Debug模块缺少CLAUDE.md（调试辅助，简单明了）",
+      "Startup模块缺少CLAUDE.md（启动文件，标准格式）",
+      "Ld模块缺少CLAUDE.md（链接脚本，标准配置）",
+      "docs模块已有完整README.md索引，无需额外CLAUDE.md"
+    ]
+  },
+  "ignore_rules": {
+    "source": ".gitignore (not found, using defaults)",
+    "patterns": [
+      "node_modules/**",
+      ".git/**",
+      ".github/**",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "__pycache__/**",
+      "*.lock",
+      "*.log",
+      "*.bin",
+      "*.pdf",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.mp4",
+      "*.zip",
+      "*.tar",
+      "*.gz",
+      "obj/**",
+      "*.o",
+      "*.elf",
+      "*.hex"
+    ],
+    "ignored_directories": [
+      "obj/",
+      ".vscode/",
+      ".spec-workflow/"
+    ],
+    "ignored_files": [
+      "*.pdf",
+      "*.wvproj",
+      "*.template",
+      "lcdfont.h"
+    ]
+  },
+  "truncated": false,
+  "truncation_reason": null,
+  "scan_notes": [
+    "项目为嵌入式C语言项目，采用裸机开发模式",
+    "核心是5ms协作式调度器，管理多个周期性任务",
+    "User模块是核心应用层，包含所有业务逻辑和驱动",
+    "Peripheral和Core模块为稳定的外设库和内核文件，无需频繁修改",
+    "docs目录包含完整的硬件文档和移植指南",
+    "关键技术：UART DMA三级缓冲、状态机、模块化驱动"
+  ],
+  "next_steps": [
+    "补充Peripheral模块文档（如需深入了解外设库）",
+    "添加Core模块文档（如需了解RISC-V内核细节）",
+    "完善测试覆盖（增加集成测试用例）",
+    "实现外部Flash存储管理（W25Q128驱动）",
+    "开发网络通信模块（Ethernet/MQTT）"
+  ],
+  "recommended_scan_targets": [
+    "User/drivers/ - 未来外设驱动扩展目录",
+    "User/middleware/ - 协议栈和状态机框架",
+    "User/application/ - 高级业务逻辑层"
+  ]
+}

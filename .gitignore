@@ -1,0 +1,34 @@
+# 编译输出
+obj/
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.d
+*.su
+
+# IDE 和调试配置
+.settings/
+*.launch
+.metadata/
+.recommenders/
+
+# 临时文件
+nul
+*.tmp
+*.bak
+*.swp
+*~
+
+# 大型 PDF 文档（可选）
+*.PDF
+
+# 工作流临时文件
+.workflow/
+.spec-workflow/
+
+# 系统文件
+.DS_Store
+Thumbs.db

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(if [ -d \"f:/door_project/door_project_1/door_project/.vscode\" ])",
+      "Bash(then echo \"目录存在\")",
+      "Bash(else echo \"目录不存在\")",
+      "Bash(fi)",
+      "Bash(\"/c/Users/ZXZL/AppData/Roaming/Python/Python312/Scripts/uvx.exe\" --version)",
+      "Bash(npx:*)"
+    ]
+  }
+}
