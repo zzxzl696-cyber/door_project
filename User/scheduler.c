@@ -6,6 +6,7 @@
 #include "rfid_task.h"
 #include "auth_manager.h"
 #include "user_admin.h"
+#include "door_status_ui.h"
 uint8_t task_num;
 
 typedef struct
@@ -23,6 +24,7 @@ static task_t scheduler_task[] =
 		{matrix_key_scan, 10, 0},	   // 矩阵按键扫描：10ms周期
 		{door_control_update, 100, 0}, // 门禁状态更新：100ms周期
 		{auth_manager_update, 100, 0}, // 认证管理器更新：100ms周期
+		{door_status_ui_update, 100, 0}, // UI状态更新：100ms周期
 		{user_admin_update, 500, 0},   // 用户管理更新：500ms周期
 };
 

@@ -26,6 +26,7 @@
 #include "lcd_test_task.h"
 #include "menu_task.h"
 #include "door_control.h"
+#include "door_status_ui.h"
 
 /* Global typedef */
 
@@ -106,10 +107,17 @@ int main(void)
 	user_admin_init();
 	printf("[INFO] Auth system initialized!\r\n");
 
-	/* 初始化LCD显示屏 */
+	/* 初始化LCD显示屏和状态UI */
 	printf("[INFO] Initializing ST7735S LCD...\r\n");
-	menu_init(); // 使用纯C菜单系统初始化
+	door_status_ui_init(); // 使用状态显示界面替代菜单系统
 	printf("[INFO] LCD initialized successfully!\r\n");
+
+	/* 注册认证管理器回调 */
+	auth_manager_set_callback(door_status_ui_on_auth_result);
+	auth_manager_set_start_callback(door_status_ui_on_auth_start);
+
+	/* 注册密码输入UI回调 */
+	pwd_input_set_ui_callback(door_status_ui_on_password_input);
 
 	/* 显示欢迎界面 */
 	// lcd_welcome_screen();  // 如果需要欢迎界面,取消注释

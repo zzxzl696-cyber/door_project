@@ -19,6 +19,7 @@ static struct
 	uint8_t input_count;
 	uint32_t start_time;
 	pwd_input_callback_t callback;
+	pwd_ui_update_callback_t ui_callback;
 } s_pwd_input;
 
 /* ================= 公开API实现 ================= */
@@ -28,6 +29,11 @@ void pwd_input_init(void)
 	memset(&s_pwd_input, 0, sizeof(s_pwd_input));
 	s_pwd_input.state = PWD_STATE_IDLE;
 	printf("[PwdInput] Initialized\r\n");
+}
+
+void pwd_input_set_ui_callback(pwd_ui_update_callback_t callback)
+{
+	s_pwd_input.ui_callback = callback;
 }
 
 void pwd_input_start(pwd_input_callback_t callback)
@@ -88,6 +94,12 @@ void pwd_input_on_key(uint8_t key_id)
 				   s_pwd_input.password[1],
 				   s_pwd_input.password[2],
 				   s_pwd_input.password[3]);
+
+			/* 通知UI更新 */
+			if (s_pwd_input.ui_callback)
+			{
+				s_pwd_input.ui_callback(s_pwd_input.input_count);
+			}
 		}
 		return;
 	}
@@ -109,6 +121,12 @@ void pwd_input_on_key(uint8_t key_id)
 		s_pwd_input.input_count++;
 
 		printf("[PwdInput] Input digit %d, count=%d\r\n", digit, s_pwd_input.input_count);
+
+		/* 通知UI更新 */
+		if (s_pwd_input.ui_callback)
+		{
+			s_pwd_input.ui_callback(s_pwd_input.input_count);
+		}
 
 		/* 检查是否输入完成 */
 		if (s_pwd_input.input_count >= PWD_INPUT_LENGTH)

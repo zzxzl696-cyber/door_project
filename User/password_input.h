@@ -28,12 +28,21 @@ typedef enum {
 /* 密码输入回调函数类型 */
 typedef void (*pwd_input_callback_t)(const uint8_t *password, uint8_t length, pwd_input_state_t state);
 
+/* UI 更新回调函数类型 */
+typedef void (*pwd_ui_update_callback_t)(uint8_t length);
+
 /* ================= 初始化函数 ================= */
 
 /**
  * @brief 初始化密码输入模块
  */
 void pwd_input_init(void);
+
+/**
+ * @brief 设置 UI 更新回调
+ * @param callback UI 更新回调函数
+ */
+void pwd_input_set_ui_callback(pwd_ui_update_callback_t callback);
 
 /* ================= 输入控制函数 ================= */
 

@@ -32,6 +32,9 @@ typedef enum {
 /* 认证结果回调 */
 typedef void (*auth_result_callback_t)(auth_method_t method, auth_result_t result, const user_entry_t *user);
 
+/* 认证开始回调 */
+typedef void (*auth_start_callback_t)(auth_method_t method);
+
 /* ================= 初始化函数 ================= */
 
 /**
@@ -45,6 +48,12 @@ void auth_manager_init(void);
  * @param callback 回调函数
  */
 void auth_manager_set_callback(auth_result_callback_t callback);
+
+/**
+ * @brief 设置认证开始回调
+ * @param callback 回调函数
+ */
+void auth_manager_set_start_callback(auth_start_callback_t callback);
 
 /* ================= 认证触发函数 ================= */
 

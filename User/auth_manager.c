@@ -10,6 +10,7 @@
 #include "password_input.h"
 #include "timer_config.h"
 #include "by8301.h"
+#include "user_admin.h"
 #include "debug.h"
 #include <string.h>
 
@@ -20,6 +21,7 @@ static struct
 	uint8_t fail_count;
 	uint32_t lockout_start;
 	auth_result_callback_t callback;
+	auth_start_callback_t start_callback;
 	uint8_t last_rfid_uid[4]; /* 用于日志记录 */
 } s_auth_mgr;
 
@@ -132,6 +134,11 @@ void auth_manager_set_callback(auth_result_callback_t callback)
 	s_auth_mgr.callback = callback;
 }
 
+void auth_manager_set_start_callback(auth_start_callback_t callback)
+{
+	s_auth_mgr.start_callback = callback;
+}
+
 auth_result_t auth_process_rfid(const RFID_Frame *frame)
 {
 	if (frame == NULL)
@@ -144,6 +151,12 @@ auth_result_t auth_process_rfid(const RFID_Frame *frame)
 	{
 		printf("[AuthMgr] System locked, rejecting RFID\r\n");
 		return AUTH_RESULT_FAILED;
+	}
+
+	/* 通知UI认证开始 */
+	if (s_auth_mgr.start_callback)
+	{
+		s_auth_mgr.start_callback(AUTH_RFID);
 	}
 
 	/* 保存UID用于日志 */
@@ -189,6 +202,12 @@ auth_result_t auth_process_fingerprint(const SearchResult *result)
 		return AUTH_RESULT_FAILED;
 	}
 
+	/* 通知UI认证开始 */
+	if (s_auth_mgr.start_callback)
+	{
+		s_auth_mgr.start_callback(AUTH_FINGERPRINT);
+	}
+
 	s_auth_mgr.state = AUTH_MGR_PROCESSING;
 
 	printf("[AuthMgr] Processing fingerprint: ID=%d, Score=%d\r\n",
@@ -222,6 +241,12 @@ void auth_start_password(void)
 	{
 		printf("[AuthMgr] System locked, cannot start password input\r\n");
 		return;
+	}
+
+	/* 通知UI认证开始 */
+	if (s_auth_mgr.start_callback)
+	{
+		s_auth_mgr.start_callback(AUTH_PASSWORD);
 	}
 
 	s_auth_mgr.state = AUTH_MGR_PASSWORD_INPUT;

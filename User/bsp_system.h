@@ -48,4 +48,5 @@
 #include "password_input.h"
 #include "auth_manager.h"
 #include "user_admin.h"
+#include "door_status_ui.h"
 #endif // BSP_SYSTEM_H
