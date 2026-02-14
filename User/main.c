@@ -109,6 +109,7 @@ int main(void)
 
 	/* 初始化LCD显示屏和状态UI */
 	printf("[INFO] Initializing ST7735S LCD...\r\n");
+	LCD_Init();            // 初始化SPI2和ST7735S屏幕
 	door_status_ui_init(); // 使用状态显示界面替代菜单系统
 	printf("[INFO] LCD initialized successfully!\r\n");
 

@@ -26,7 +26,8 @@ typedef enum {
     UI_STATE_INPUT_PASSWORD,     /* 输入密码中 */
     UI_STATE_AUTH_SUCCESS,       /* 认证成功 */
     UI_STATE_AUTH_FAILED,        /* 认证失败 */
-    UI_STATE_LOCKED              /* 系统锁定 */
+    UI_STATE_LOCKED,             /* 系统锁定 */
+    UI_STATE_ADMIN               /* 管理模式 */
 } ui_state_t;
 
 /* ================= UI 状态结构 ================= */
@@ -99,5 +100,25 @@ void door_status_ui_on_password_input(uint8_t length);
  * @param method 认证方式
  */
 void door_status_ui_on_auth_start(auth_method_t method);
+
+/* ================= 管理模式 UI 回调 ================= */
+
+/**
+ * @brief 进入管理模式时调用（由认证管理器调用）
+ * @note  切换 LCD 到管理模式界面
+ */
+void door_status_ui_on_admin_enter(void);
+
+/**
+ * @brief 退出管理模式时调用（由 user_admin 调用）
+ * @note  恢复 LCD 到普通待机界面
+ */
+void door_status_ui_on_admin_exit(void);
+
+/**
+ * @brief 管理模式状态变化时调用（由 user_admin 调用）
+ * @note  刷新管理界面内容区域
+ */
+void door_status_ui_on_admin_state_change(void);
 
 #endif /* __DOOR_STATUS_UI_H */

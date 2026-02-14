@@ -11,6 +11,7 @@
 #include "timer_config.h"
 #include "by8301.h"
 #include "user_admin.h"
+#include "door_status_ui.h"
 #include "debug.h"
 #include <string.h>
 
@@ -279,6 +280,8 @@ auth_result_t auth_process_password(const uint8_t password[4])
 		printf("[AuthMgr] Master password verified, entering admin mode\r\n");
 		/* 主密码不开门，进入管理模式 */
 		user_admin_enter(password);
+		/* 切换 UI 到管理模式界面 */
+		door_status_ui_on_admin_enter();
 		s_auth_mgr.state = AUTH_MGR_IDLE;
 		return AUTH_RESULT_SUCCESS;
 	}

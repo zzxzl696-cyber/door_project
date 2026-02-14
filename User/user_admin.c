@@ -10,11 +10,16 @@
 #include "password_input.h"
 #include "timer_config.h"
 #include "as608.h"
+#include "door_status_ui.h"
 #include "debug.h"
 #include <string.h>
 
 /* 管理模式超时 */
 #define ADMIN_TIMEOUT_MS 60000 /* 60秒无操作自动退出 */
+
+#define FP_ENROLL_MAX_ATTEMPTS 3
+#define FP_ENROLL_RETRY_DELAY_MS 800
+#define FP_ENROLL_DONE_HOLD_MS 600
 
 /* 内部状态 */
 static struct
@@ -38,7 +43,23 @@ static struct
 	uint8_t master_pwd_step; /* 0=旧密码, 1=新密码, 2=确认 */
 } s_admin;
 
+typedef struct
+{
+	fingerprint_enroll_state_t state;
+	uint16_t page_id;
+	uint8_t attempt;
+	uint8_t last_error;
+	uint8_t retry_pending;
+	uint32_t state_enter_time;
+} fingerprint_enroll_ctx_t;
+
+static fingerprint_enroll_ctx_t s_fp_enroll;
+
 /* ================= 内部函数 ================= */
+
+static void fingerprint_enroll_reset(void);
+static void fingerprint_enroll_set_state(fingerprint_enroll_state_t state);
+static void fingerprint_enroll_fail(uint8_t ensure);
 
 static void reset_state(void)
 {
@@ -49,6 +70,7 @@ static void reset_state(void)
 	s_admin.password_set = 0;
 	s_admin.selected_user_id = 0;
 	s_admin.master_pwd_step = 0;
+	fingerprint_enroll_reset();
 }
 
 static void update_activity(void)
@@ -56,9 +78,54 @@ static void update_activity(void)
 	s_admin.last_activity = TIM_Get_MillisCounter();
 }
 
+static void fingerprint_enroll_reset(void)
+{
+	s_fp_enroll.state = FP_ENROLL_IDLE;
+	s_fp_enroll.page_id = 0;
+	s_fp_enroll.attempt = 0;
+	s_fp_enroll.last_error = 0;
+	s_fp_enroll.retry_pending = 0;
+	s_fp_enroll.state_enter_time = 0;
+}
+
+static void fingerprint_enroll_set_state(fingerprint_enroll_state_t state)
+{
+	if (s_fp_enroll.state == state)
+	{
+		return;
+	}
+
+	s_fp_enroll.state = state;
+	s_fp_enroll.state_enter_time = TIM_Get_MillisCounter();
+	update_activity();
+	door_status_ui_on_admin_state_change();
+}
+
+static void fingerprint_enroll_fail(uint8_t ensure)
+{
+	s_fp_enroll.last_error = ensure;
+	printf("[Admin] Fingerprint enroll failed (err=%d)\r\n", ensure);
+
+	if (s_fp_enroll.attempt < FP_ENROLL_MAX_ATTEMPTS)
+	{
+		s_fp_enroll.attempt++;
+		s_fp_enroll.retry_pending = 1;
+		printf("[Admin] Fingerprint enroll retry %d/%d\r\n",
+			   s_fp_enroll.attempt, FP_ENROLL_MAX_ATTEMPTS);
+	}
+	else
+	{
+		s_fp_enroll.retry_pending = 0;
+		printf("[Admin] Fingerprint enroll stopped after %d attempts\r\n",
+			   FP_ENROLL_MAX_ATTEMPTS);
+	}
+
+	fingerprint_enroll_set_state(FP_ENROLL_ERROR);
+}
+
 /**
- * @brief 执行指纹录入流程（阻塞式）
- * @note  调用 Add_FR() 完成两次按压录入，成功后自动推进到密码步骤
+ * @brief Start fingerprint enroll state machine
+ * @note  Non-blocking; progress handled in fingerprint_enroll_update()
  */
 static void start_fingerprint_enroll(void)
 {
@@ -68,17 +135,11 @@ static void start_fingerprint_enroll(void)
 	printf("[Admin] Starting fingerprint enrollment, PageID=%d\r\n", fp_id);
 	printf("[Admin] Place your finger on the sensor...\r\n");
 
-	uint8_t ret = Add_FR(fp_id);
-	if (ret == 0)
-	{
-		/* 录入成功，调用回调推进步骤 */
-		user_admin_on_fingerprint(fp_id);
-	}
-	else
-	{
-		printf("[Admin] Fingerprint enrollment failed (err=%d)\r\n", ret);
-		printf("[Admin] Press 13 to retry, 16 to skip, 15 to cancel\r\n");
-	}
+	fingerprint_enroll_reset();
+	s_fp_enroll.page_id = fp_id;
+	s_fp_enroll.attempt = 1;
+	fingerprint_enroll_set_state(FP_ENROLL_WAIT_FINGER_1);
+
 }
 
 /**
@@ -118,6 +179,7 @@ static void finish_add_user(void)
 
 	s_admin.add_step = ADD_STEP_DONE;
 	s_admin.state = ADMIN_STATE_UNLOCKED;
+	door_status_ui_on_admin_state_change();
 }
 
 /**
@@ -133,12 +195,14 @@ static void add_user_password_callback(const uint8_t *password, uint8_t length, 
 
 		s_admin.add_step = ADD_STEP_CONFIRM;
 		update_activity();
+		door_status_ui_on_admin_state_change();
 	}
 	else if (state == PWD_STATE_TIMEOUT || state == PWD_STATE_CANCELLED)
 	{
 		/* 跳过密码设置 */
 		s_admin.password_set = 0;
 		s_admin.add_step = ADD_STEP_CONFIRM;
+		door_status_ui_on_admin_state_change();
 	}
 }
 
@@ -150,6 +214,7 @@ static void master_pwd_callback(const uint8_t *password, uint8_t length, pwd_inp
 	if (state != PWD_STATE_COMPLETE || length != PWD_INPUT_LENGTH)
 	{
 		s_admin.state = ADMIN_STATE_UNLOCKED;
+		door_status_ui_on_admin_state_change();
 		return;
 	}
 
@@ -159,6 +224,7 @@ static void master_pwd_callback(const uint8_t *password, uint8_t length, pwd_inp
 		memcpy(s_admin.old_master_pwd, password, 4);
 		s_admin.master_pwd_step = 1;
 		printf("[Admin] Enter new master password\r\n");
+		door_status_ui_on_admin_state_change();
 		pwd_input_start(master_pwd_callback);
 		break;
 
@@ -166,6 +232,7 @@ static void master_pwd_callback(const uint8_t *password, uint8_t length, pwd_inp
 		memcpy(s_admin.new_master_pwd, password, 4);
 		s_admin.master_pwd_step = 2;
 		printf("[Admin] Confirm new master password\r\n");
+		door_status_ui_on_admin_state_change();
 		pwd_input_start(master_pwd_callback);
 		break;
 
@@ -202,6 +269,7 @@ static void master_pwd_callback(const uint8_t *password, uint8_t length, pwd_inp
 			}
 		}
 		s_admin.state = ADMIN_STATE_UNLOCKED;
+		door_status_ui_on_admin_state_change();
 		break;
 	}
 
@@ -249,6 +317,7 @@ void user_admin_exit(void)
 {
 	reset_state();
 	printf("[Admin] Admin mode exited\r\n");
+	door_status_ui_on_admin_exit();
 }
 
 admin_state_t user_admin_get_state(void)
@@ -272,12 +341,14 @@ void user_admin_start_add_user(void)
 	s_admin.add_step = ADD_STEP_NAME;
 	memset(&s_admin.new_user, 0, sizeof(user_entry_t));
 	s_admin.password_set = 0;
+	fingerprint_enroll_reset();
 
 	/* 设置默认用户名 */
 	snprintf(s_admin.new_user.name, USER_NAME_LEN, "User%d", user_db_get_count() + 1);
 
 	update_activity();
 	printf("[Admin] Start adding user, step=NAME\r\n");
+	door_status_ui_on_admin_state_change();
 }
 
 void user_admin_start_delete_user(void)
@@ -292,6 +363,7 @@ void user_admin_start_delete_user(void)
 
 	update_activity();
 	printf("[Admin] Start delete user flow\r\n");
+	door_status_ui_on_admin_state_change();
 }
 
 void user_admin_start_list_users(void)
@@ -335,6 +407,7 @@ void user_admin_start_list_users(void)
 		}
 	}
 	printf("[Admin] ---- Press any key to return ----\r\n");
+	door_status_ui_on_admin_state_change();
 }
 
 void user_admin_start_change_master_pwd(void)
@@ -351,6 +424,7 @@ void user_admin_start_change_master_pwd(void)
 	pwd_input_start(master_pwd_callback);
 
 	update_activity();
+	door_status_ui_on_admin_state_change();
 }
 
 void user_admin_on_key(uint8_t key_id)
@@ -421,11 +495,6 @@ void user_admin_on_key(uint8_t key_id)
 		{
 			user_admin_cancel();
 		}
-		/* 按键13：指纹步骤时重新录入指纹 */
-		else if (key_id == 13 && s_admin.add_step == ADD_STEP_FINGERPRINT)
-		{
-			start_fingerprint_enroll();
-		}
 		/* 密码输入步骤：将数字键传递给密码模块 */
 		else if (s_admin.add_step == ADD_STEP_PASSWORD)
 		{
@@ -459,6 +528,7 @@ void user_admin_on_key(uint8_t key_id)
 				printf("[Admin] Selected user: ID=%d, Name=%s\r\n",
 					   user.id, user.name);
 				printf("[Admin] Press 16(confirm) to delete, 15(cancel)\r\n");
+				door_status_ui_on_admin_state_change();
 			}
 			else
 			{
@@ -470,6 +540,7 @@ void user_admin_on_key(uint8_t key_id)
 	case ADMIN_STATE_LIST_USERS:
 		/* 任意键返回菜单 */
 		s_admin.state = ADMIN_STATE_UNLOCKED;
+		door_status_ui_on_admin_state_change();
 		break;
 
 	default:
@@ -504,6 +575,7 @@ void user_admin_on_rfid(const uint8_t uid[4])
 		update_activity();
 
 		/* RFID成功后自动启动指纹录入 */
+		door_status_ui_on_admin_state_change();
 		start_fingerprint_enroll();
 	}
 }
@@ -517,6 +589,8 @@ void user_admin_on_fingerprint(uint16_t fp_id)
 
 	if (s_admin.add_step == ADD_STEP_FINGERPRINT)
 	{
+		fingerprint_enroll_reset();
+
 		/* 检查指纹是否已被使用 */
 		user_entry_t temp;
 		if (user_db_find_by_fingerprint(fp_id, &temp) == USER_DB_OK)
@@ -532,6 +606,7 @@ void user_admin_on_fingerprint(uint16_t fp_id)
 
 		s_admin.add_step = ADD_STEP_PASSWORD;
 		update_activity();
+		door_status_ui_on_admin_state_change();
 	}
 }
 
@@ -547,8 +622,10 @@ void user_admin_cancel(void)
 		pwd_input_cancel();
 	}
 
+	fingerprint_enroll_reset();
 	s_admin.state = ADMIN_STATE_UNLOCKED;
 	printf("[Admin] Operation cancelled\r\n");
+	door_status_ui_on_admin_state_change();
 }
 
 void user_admin_confirm(void)
@@ -567,19 +644,23 @@ void user_admin_confirm(void)
 			/* 跳到下一步 */
 			s_admin.add_step = ADD_STEP_RFID;
 			printf("[Admin] Name confirmed, step=RFID\r\n");
+			door_status_ui_on_admin_state_change();
 		}
 		else if (s_admin.add_step == ADD_STEP_RFID)
 		{
 			/* 跳过RFID，进入指纹步骤并自动启动录入 */
 			s_admin.add_step = ADD_STEP_FINGERPRINT;
 			printf("[Admin] Skipping RFID, step=FINGERPRINT\r\n");
+			door_status_ui_on_admin_state_change();
 			start_fingerprint_enroll();
 		}
 		else if (s_admin.add_step == ADD_STEP_FINGERPRINT)
 		{
 			/* 跳过指纹 */
+			fingerprint_enroll_reset();
 			s_admin.add_step = ADD_STEP_PASSWORD;
 			printf("[Admin] Skipping fingerprint, step=PASSWORD\r\n");
+			door_status_ui_on_admin_state_change();
 			pwd_input_start(add_user_password_callback);
 		}
 		break;
@@ -605,11 +686,13 @@ void user_admin_confirm(void)
 				}
 			}
 			s_admin.state = ADMIN_STATE_UNLOCKED;
+			door_status_ui_on_admin_state_change();
 		}
 		break;
 
 	case ADMIN_STATE_LIST_USERS:
 		s_admin.state = ADMIN_STATE_UNLOCKED;
+		door_status_ui_on_admin_state_change();
 		break;
 
 	default:
@@ -620,6 +703,11 @@ void user_admin_confirm(void)
 add_user_step_t user_admin_get_add_step(void)
 {
 	return s_admin.add_step;
+}
+
+fingerprint_enroll_state_t user_admin_get_fingerprint_enroll_state(void)
+{
+	return s_fp_enroll.state;
 }
 
 const char *user_admin_get_prompt(void)
@@ -699,6 +787,141 @@ void user_admin_set_selected_user_id(uint16_t user_id)
 {
 	s_admin.selected_user_id = user_id;
 	update_activity();
+}
+
+void fingerprint_enroll_update(void)
+{
+	uint32_t now;
+	uint8_t ensure;
+
+	if (s_admin.state != ADMIN_STATE_ADD_USER || s_admin.add_step != ADD_STEP_FINGERPRINT)
+	{
+		if (s_fp_enroll.state != FP_ENROLL_IDLE)
+		{
+			fingerprint_enroll_reset();
+		}
+		return;
+	}
+
+	if (s_fp_enroll.state == FP_ENROLL_IDLE)
+	{
+		return;
+	}
+
+	now = TIM_Get_MillisCounter();
+
+	switch (s_fp_enroll.state)
+	{
+	case FP_ENROLL_WAIT_FINGER_1:
+		ensure = PS_GetImage();
+		if (ensure == 0x00)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_CAPTURE_1);
+		}
+		else if (ensure != 0x02)
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_CAPTURE_1:
+		ensure = PS_GenChar(CharBuffer1);
+		if (ensure == 0x00)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_REMOVE);
+		}
+		else
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_REMOVE:
+		ensure = PS_GetImage();
+		if (ensure == 0x02)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_WAIT_FINGER_2);
+		}
+		else if (ensure != 0x00)
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_WAIT_FINGER_2:
+		ensure = PS_GetImage();
+		if (ensure == 0x00)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_CAPTURE_2);
+		}
+		else if (ensure != 0x02)
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_CAPTURE_2:
+		ensure = PS_GenChar(CharBuffer2);
+		if (ensure == 0x00)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_MATCH);
+		}
+		else
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_MATCH:
+		ensure = PS_Match();
+		if (ensure == 0x00)
+		{
+			fingerprint_enroll_set_state(FP_ENROLL_STORE);
+		}
+		else
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_STORE:
+		ensure = PS_RegModel();
+		if (ensure == 0x00)
+		{
+			ensure = PS_StoreChar(CharBuffer2, s_fp_enroll.page_id);
+		}
+		if (ensure == 0x00)
+		{
+			printf("[Admin] Fingerprint enrolled successfully! ID=%d\r\n", s_fp_enroll.page_id);
+			fingerprint_enroll_set_state(FP_ENROLL_DONE);
+		}
+		else
+		{
+			fingerprint_enroll_fail(ensure);
+		}
+		break;
+
+	case FP_ENROLL_DONE:
+		if (now - s_fp_enroll.state_enter_time >= FP_ENROLL_DONE_HOLD_MS)
+		{
+			uint16_t page_id = s_fp_enroll.page_id;
+			fingerprint_enroll_reset();
+			user_admin_on_fingerprint(page_id);
+		}
+		break;
+
+	case FP_ENROLL_ERROR:
+		if (s_fp_enroll.retry_pending &&
+			(now - s_fp_enroll.state_enter_time >= FP_ENROLL_RETRY_DELAY_MS))
+		{
+			s_fp_enroll.retry_pending = 0;
+			fingerprint_enroll_set_state(FP_ENROLL_WAIT_FINGER_1);
+		}
+		break;
+
+	default:
+		break;
+	}
 }
 
 void user_admin_update(void)

@@ -25,6 +25,7 @@ static task_t scheduler_task[] =
 		{door_control_update, 100, 0}, // 门禁状态更新：100ms周期
 		{auth_manager_update, 100, 0}, // 认证管理器更新：100ms周期
 		{door_status_ui_update, 100, 0}, // UI状态更新：100ms周期
+		{fingerprint_enroll_update, 100, 0}, // Fingerprint enroll update: 100ms
 		{user_admin_update, 500, 0},   // 用户管理更新：500ms周期
 };
 

@@ -159,7 +159,6 @@ void door_control_unlock(auth_method_t method, uint32_t duration_ms)
 	servo_set_angle(SERVO_ANGLE_UNLOCKED);
 
 	printf("[DOOR] Door unlocked successfully\r\n");
-	menu_update_door_status();
 }
 
 /**
@@ -178,7 +177,6 @@ void door_control_lock(void)
 	servo_set_angle(SERVO_ANGLE_LOCKED);
 
 	printf("[DOOR] Door locked\r\n");
-	menu_update_door_status();
 }
 
 /**

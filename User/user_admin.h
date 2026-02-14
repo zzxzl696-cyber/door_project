@@ -33,6 +33,20 @@ typedef enum {
     ADD_STEP_DONE                   /* 添加完成 */
 } add_user_step_t;
 
+/* Fingerprint enroll state */
+typedef enum {
+    FP_ENROLL_IDLE = 0,
+    FP_ENROLL_WAIT_FINGER_1,
+    FP_ENROLL_CAPTURE_1,
+    FP_ENROLL_REMOVE,
+    FP_ENROLL_WAIT_FINGER_2,
+    FP_ENROLL_CAPTURE_2,
+    FP_ENROLL_MATCH,
+    FP_ENROLL_STORE,
+    FP_ENROLL_DONE,
+    FP_ENROLL_ERROR
+} fingerprint_enroll_state_t;
+
 /* 管理操作回调 */
 typedef void (*admin_callback_t)(admin_state_t state, uint8_t success);
 
@@ -136,6 +150,12 @@ void user_admin_confirm(void);
 add_user_step_t user_admin_get_add_step(void);
 
 /**
+ * @brief Get fingerprint enroll state
+ * @return Current enroll state
+ */
+fingerprint_enroll_state_t user_admin_get_fingerprint_enroll_state(void);
+
+/**
  * @brief 获取当前操作提示文本
  * @return 提示字符串
  */
@@ -168,5 +188,11 @@ void user_admin_set_selected_user_id(uint16_t user_id);
  * @note  由调度器调用，处理超时等
  */
 void user_admin_update(void);
+
+/**
+ * @brief Fingerprint enroll periodic update
+ * @note  Called by scheduler, 100ms polling PS_GetImage
+ */
+void fingerprint_enroll_update(void);
 
 #endif /* __USER_ADMIN_H */
