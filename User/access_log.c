@@ -6,11 +6,7 @@
  * Description        : 开门日志模块实现 - Flash循环缓冲存储
  *********************************************************************************/
 
-#include "access_log.h"
-#include "ch32v30x.h"
-#include "timer_config.h"
-#include "debug.h"
-#include <string.h>
+#include "bsp_system.h"
 
 /* Flash操作配置 */
 #define FLASH_PAGE_SIZE             4096  /* CH32V307标准页擦除大小4KB */

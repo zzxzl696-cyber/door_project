@@ -6,9 +6,7 @@
 * Description        : 纯C语言实现的简单菜单系统
 *********************************************************************************/
 
-#include "simple_menu_c.h"
-#include "lcd.h"
-#include <stdio.h>
+#include "bsp_system.h"
 
 // 内部函数声明
 static void draw_item(menu_item_t* item, uint16_t y, uint8_t selected);

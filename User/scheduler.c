@@ -1,12 +1,4 @@
-#include "scheduler.h"
-#include "uart_rx_task.h"
-#include "lcd_test_task.h"
-#include "menu_task.h"
-#include "door_control.h"
-#include "rfid_task.h"
-#include "auth_manager.h"
-#include "user_admin.h"
-#include "door_status_ui.h"
+#include "bsp_system.h"
 uint8_t task_num;
 
 typedef struct
@@ -18,7 +10,7 @@ typedef struct
 
 static task_t scheduler_task[] =
 	{
-		{uart_rx_task, 5, 0}, // UART接收任务：5ms周期
+		{esp8266_tick_5ms, 5, 0}, // ESP8266 驱动：5ms 周期（非阻塞状态机，使用USART1）
 		{rfid_task, 5, 0},
 		// {key_state, 10, 0},
 		{matrix_key_scan, 10, 0},	   // 矩阵按键扫描：10ms周期
@@ -26,6 +18,7 @@ static task_t scheduler_task[] =
 		{auth_manager_update, 100, 0}, // 认证管理器更新：100ms周期
 		{door_status_ui_update, 100, 0}, // UI状态更新：100ms周期
 		{fingerprint_enroll_update, 100, 0}, // Fingerprint enroll update: 100ms
+		{mqtt_app_tick, 500, 0},       // MQTT应用层：500ms周期（事件上报+心跳）
 		{user_admin_update, 500, 0},   // 用户管理更新：500ms周期
 };
 

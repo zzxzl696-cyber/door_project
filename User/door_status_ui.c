@@ -8,16 +8,7 @@
  *                      ONE STEP = ONE SCREEN.
  *********************************************************************************/
 
-#include "door_status_ui.h"
-#include "lcd.h"
-#include "lcd_init.h"
-#include "timer_config.h"
-#include "auth_manager.h"
-#include "user_admin.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
+#include "bsp_system.h"
 
 /* ================= Layout constants ================= */
 

@@ -101,7 +101,10 @@ docs/
 ├── changelog_door_sensor_to_servo.md      # 门磁改舵机修改记录
 ├── as608_porting.md                       # AS608指纹模块移植文档
 ├── as608_summary.md                       # AS608指纹模块移植总结
-└── as608_quickstart.md                    # AS608快速开始指南 ⭐
+├── as608_quickstart.md                    # AS608快速开始指南 ⭐
+├── door_status_ui_test_guide.md           # 门禁状态UI测试指南
+├── esp8266_framework.md                   # ESP8266 WiFi框架文档
+└── mqtt_app_test_guide.md                 # MQTT应用测试指南
 ```
 
 ---
@@ -133,6 +136,53 @@ docs/
 | 如何使用指纹识别？ | as608_porting.md - 使用示例 |
 | 指纹模块握手失败？ | as608_porting.md - 常见问题 |
 | 如何录入/验证指纹？ | as608_porting.md - 使用示例 |
+
+---
+
+### 3. UI与网络通信文档
+
+#### [door_status_ui_test_guide.md](door_status_ui_test_guide.md)
+**门禁状态 UI 测试指南**
+
+- LCD 彩屏 UI 显示效果验证
+- 门禁状态与 UI 联动测试
+- 菜单系统操作流程
+
+**适用场景**:
+- 验证 UI 显示功能
+- 调试 LCD 显示异常
+- 测试菜单交互流程
+
+---
+
+#### [esp8266_framework.md](esp8266_framework.md)
+**ESP8266 WiFi 框架文档**
+
+- AT 指令驱动层架构
+- WiFi 连接与断线重连机制
+- ESP8266 初始化流程
+- 与 MQTT 层的接口定义
+
+**适用场景**:
+- 了解 WiFi 模块架构设计
+- 调试 ESP8266 连接问题
+- 扩展网络功能时参考
+
+---
+
+#### [mqtt_app_test_guide.md](mqtt_app_test_guide.md)
+**MQTT 应用测试指南**
+
+- MQTT Broker 配置说明
+- 发布/订阅主题定义
+- 门禁状态上报格式
+- 远程控制指令格式
+- 测试工具使用方法
+
+**适用场景**:
+- 测试 MQTT 远程控制功能
+- 调试消息收发问题
+- 对接云平台时参考
 
 ---
 
@@ -216,6 +266,7 @@ docs/
 | 2026-01-21 | 创建文档索引，整理现有文档 | AI Assistant |
 | 2026-01-21 | 添加AS608指纹模块移植文档 | AI Assistant |
 | 2026-01-21 | 添加AS608移植总结和快速开始指南 | AI Assistant |
+| 2026-03-11 | 添加UI测试指南、ESP8266框架文档、MQTT应用测试指南 | AI Assistant |
 
 ---
 

@@ -216,8 +216,8 @@ int main(void) {
 
 ### 单元测试
 
-- **串口DMA测试**: `User/uart_test.c`
-- **LCD显示测试**: `User/lcd_test_task.c`
+- 串口DMA接收验证
+- LCD显示功能验证
 
 ### 集成测试
 
@@ -262,6 +262,37 @@ typedef struct {
 - **缩进**: 4空格（禁用Tab）
 - **大括号**: K&R风格
 - **注释**: Doxygen格式函数注释
+
+### 头文件管理（必须遵守）
+
+**统一头文件**: `User/bsp_system.h` 是全项目的唯一入口头文件，包含所有标准库、芯片库、驱动和业务模块的声明。
+
+**规则**:
+1. **所有 .c 文件只 include `bsp_system.h`**，禁止直接 include 其他项目头文件
+2. **新增模块时**，将新模块的 .h 文件添加到 `bsp_system.h` 的对应分组中
+3. **例外**: `system_ch32v30x.c`（芯片库）和 `ch32v30x_it.c`（需额外 include `ch32v30x_it.h`）
+
+**bsp_system.h 分组结构**:
+```
+标准库       → stdio.h, string.h, stdint.h, stdbool.h, stdlib.h, ctype.h ...
+芯片库       → ch32v30x.h, debug.h
+系统模块     → timer_config.h, scheduler.h
+通信驱动     → ringbuffer_large.h, usart1_dma_rx.h, uart3_dma_rx.h
+外设驱动     → led.h, key_app.h, lcd_init.h, lcd.h, lcdfont.h
+功能模块     → door_control.h, as608.h, by8301.h, rfid_reader.h
+任务模块     → uart_rx_task.h, rfid_task.h, simple_menu_c.h, menu_task.h
+认证系统     → user_database.h, access_log.h, password_input.h, auth_manager.h ...
+WiFi/MQTT   → esp8266_config.h, esp_at.h, esp8266.h, esp8266_mqtt.h
+```
+
+**新增模块示例**:
+```c
+// 1. 新建 User/new_module.h 和 User/new_module.c
+// 2. 在 bsp_system.h 对应分组中添加:
+#include "new_module.h"
+// 3. new_module.c 中只写:
+#include "bsp_system.h"
+```
 
 详细规范参考: [技术架构文档](./.spec-workflow/steering/tech.md)
 

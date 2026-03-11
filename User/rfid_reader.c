@@ -6,7 +6,7 @@
  * Description        : HF RFID reader driver (auto + command modes)
  *********************************************************************************/
 
-#include "rfid_reader.h"
+#include "bsp_system.h"
 
 // ================= Internal state =================
 static volatile uint8_t s_rx_buf[RFID_MAX_FRAME_LEN];

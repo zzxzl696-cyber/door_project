@@ -7,10 +7,7 @@
  *                      集成认证管理器和用户管理功能
  *********************************************************************************/
 
-#include "rfid_task.h"
-#include "rfid_reader.h"
-#include "auth_manager.h"
-#include "user_admin.h"
+#include "bsp_system.h"
 
 /* 调试开关 */
 #define RFID_TASK_DEBUG 0 // 1=开启调试输出, 0=关闭

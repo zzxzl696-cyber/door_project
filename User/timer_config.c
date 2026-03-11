@@ -12,8 +12,7 @@
 *   - 提供用户回调函数接口
 *******************************************************************************/
 
-#include "timer_config.h"
-#include "debug.h"
+#include "bsp_system.h"
 
 /* 全局变量 */
 static volatile uint32_t g_millis_counter = 0;  // 毫秒计数器（1ms递增）

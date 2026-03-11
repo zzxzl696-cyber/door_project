@@ -27,7 +27,7 @@
 
 /* DEBUG UATR Definition */
 #ifndef DEBUG
-#define DEBUG   DEBUG_UART1
+#define DEBUG   DEBUG_UART3  /* printf 使用 USART3 全重映射 (PD8-TX)，USART1 留给 ESP8266 */
 #endif
 
 /* SDI Printf Definition */

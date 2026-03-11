@@ -6,11 +6,7 @@
  * Description        : 门禁控制模块实现
  *********************************************************************************/
 
-#include "door_control.h"
-#include "debug.h"
-#include "ch32v30x.h"
 #include "bsp_system.h"
-#include "as608.h"
 
 // 全局门禁状态
 door_control_status_t g_door_status = {
@@ -158,6 +154,9 @@ void door_control_unlock(auth_method_t method, uint32_t duration_ms)
 	// 舵机转到解锁角度
 	servo_set_angle(SERVO_ANGLE_UNLOCKED);
 
+	// 通知 MQTT 应用层
+	mqtt_app_on_door_state(0);
+
 	printf("[DOOR] Door unlocked successfully\r\n");
 }
 
@@ -175,6 +174,9 @@ void door_control_lock(void)
 
 	// 舵机转到锁定角度
 	servo_set_angle(SERVO_ANGLE_LOCKED);
+
+	// 通知 MQTT 应用层
+	mqtt_app_on_door_state(1);
 
 	printf("[DOOR] Door locked\r\n");
 }

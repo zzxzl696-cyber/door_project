@@ -7,10 +7,7 @@
  *                      集成密码输入和用户管理功能
  *********************************************************************************/
 
-#include "key_app.h"
-#include "password_input.h"
-#include "auth_manager.h"
-#include "user_admin.h"
+#include "bsp_system.h"
 
 // 按键数组(只有1个按键)
 button btns[1];
@@ -286,7 +283,15 @@ void matrix_key_scan(void)
 					}
 					else if (pwd_input_is_active())
 					{
-						pwd_input_on_key(btn->id);
+						/* 密码输入模式：15=取消，0-9=数字输入 */
+						if (btn->id == 15)
+						{
+							pwd_input_cancel();
+						}
+						else if (btn->id >= 1 && btn->id <= 10)
+						{
+							pwd_input_on_key(btn->id);
+						}
 					}
 					else
 					{
@@ -342,23 +347,13 @@ void matrix_key_scan(void)
 
 						case 15: // 取消/退出
 						{
-							if (user_admin_is_active())
-							{
-								user_admin_cancel();
-							}
-							else if (pwd_input_is_active())
-							{
-								pwd_input_cancel();
-							}
+							/* 正常模式下15键无操作 */
 							break;
 						}
 
 						case 16: // 确认
 						{
-							if (user_admin_is_active())
-							{
-								user_admin_confirm();
-							}
+							/* 正常模式下16键无操作 */
 							break;
 						}
 						}

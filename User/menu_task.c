@@ -6,11 +6,7 @@
  * Description        : 纯C语言菜单任务实现
  *********************************************************************************/
 
-#include "menu_task.h"
-#include "simple_menu_c.h"
-#include "key_app.h"
-#include "debug.h"
-#include "door_control.h"
+#include "bsp_system.h"
 
 // 菜单对象(全局)
 simple_menu_t menu;

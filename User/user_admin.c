@@ -6,13 +6,7 @@
  * Description        : 用户管理模块实现
  *********************************************************************************/
 
-#include "user_admin.h"
-#include "password_input.h"
-#include "timer_config.h"
-#include "as608.h"
-#include "door_status_ui.h"
-#include "debug.h"
-#include <string.h>
+#include "bsp_system.h"
 
 /* 管理模式超时 */
 #define ADMIN_TIMEOUT_MS 60000 /* 60秒无操作自动退出 */

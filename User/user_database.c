@@ -6,10 +6,7 @@
  * Description        : 用户数据库模块实现 - Flash存储用户信息
  *********************************************************************************/
 
-#include "user_database.h"
-#include "ch32v30x.h"
-#include "debug.h"
-#include <string.h>
+#include "bsp_system.h"
 
 /* Flash操作配置 */
 #define FLASH_PAGE_SIZE 4096 /* CH32V30x标准擦除页大小4KB（见FLASH_ErasePage） */

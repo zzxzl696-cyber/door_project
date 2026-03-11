@@ -23,6 +23,7 @@ typedef struct {
     uint32_t rx_count;                               // 累计接收字节数
     uint8_t  idle_detected;                          // 空闲中断标志
     uint8_t  error_flag;                             // 错误标志
+    uint16_t dma_last_pos;                           // DMA上次已搬运位置（用于IDLE补齐，避免重复）
 } usart1_dma_rx_t;
 
 /* 全局变量声明 */
@@ -83,5 +84,20 @@ uint8_t USART1_Get_IdleFlag(void);
  * @retval None
  */
 void USART1_DMA_Process_Data(uint8_t* data_ptr, uint16_t data_len);
+
+/**
+ * @brief  从USART1环形缓冲区读取1字节（供esp_at使用）
+ * @param  data: 输出字节指针
+ * @retval 0=成功, -1=无数据
+ */
+int USART1_RX_ReadByte(uint8_t *data);
+
+/**
+ * @brief  阻塞式写入USART1（供esp_at使用）
+ * @param  data: 数据指针
+ * @param  len: 数据长度
+ * @retval 实际写入字节数
+ */
+uint16_t USART1_TX_Write(const uint8_t *data, uint16_t len);
 
 #endif /* __USART1_DMA_RX_H */

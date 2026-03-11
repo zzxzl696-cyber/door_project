@@ -8,10 +8,6 @@
  *                      使用USART2进行通信
  *********************************************************************************/
 
-#include <string.h>
-#include <stdio.h>
-#include "as608.h"
-#include "debug.h"
 #include "bsp_system.h"
 
 // 全局变量

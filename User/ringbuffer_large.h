@@ -4,7 +4,7 @@
  * Version            : V1.0.0
  * Date               : 2025-12-30
  * Description        : 大容量环形缓冲区模块 - 用于USART DMA接收
- *                      支持1024字节缓冲区，适配高速串口数据接收
+ *                      支持4096字节缓冲区，适配高速串口数据接收
  *********************************************************************************/
 
 #ifndef __RINGBUFFER_LARGE_H
@@ -13,13 +13,13 @@
 #include "ch32v30x.h"
 
 /* 配置参数 */
-#define RINGBUFFER_LARGE_SIZE 1024 // 缓冲区大小：1024字节
+#define RINGBUFFER_LARGE_SIZE 4096 // 缓冲区大小：4096字节
 
 /* 环形缓冲区结构体 */
 typedef struct
 {
-	uint16_t w;							   // 写指针 (0-1023)
-	uint16_t r;							   // 读指针 (0-1023)
+	uint16_t w;							   // 写指针 (0-4095)
+	uint16_t r;							   // 读指针 (0-4095)
 	uint8_t buffer[RINGBUFFER_LARGE_SIZE]; // 数据缓冲区
 	uint16_t itemCount;					   // 当前数据量
 	uint8_t overflow_flag;				   // 溢出标志位 (1=溢出, 0=正常)

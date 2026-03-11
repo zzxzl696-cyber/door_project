@@ -11,7 +11,7 @@
 *   - 提供完整的LED控制接口
 *******************************************************************************/
 
-#include "led.h"
+#include "bsp_system.h"
 
 /* 全局变量 - LED状态数组 */
 static uint8_t g_led_state[2] = {LED_OFF, LED_OFF};  // LED1, LED2状态

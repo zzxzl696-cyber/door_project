@@ -10,54 +10,69 @@
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 
-/*
- *@Note
- USART Print debugging routine:
- USART1_Tx(PA9).
- This example demonstrates using USART1(PA9) as a print debug port output.
-
-*/
-
-#include "debug.h"
-#include "timer_config.h"
 #include "bsp_system.h"
-#include "usart1_dma_rx.h"
-#include "lcd_init.h"
-#include "lcd_test_task.h"
-#include "menu_task.h"
-#include "door_control.h"
-#include "door_status_ui.h"
 
-/* Global typedef */
+/* ================= ESP8266 状态名称（调试用） ================= */
 
-/* Global define */
+static const char* esp8266_state_name(esp8266_state_t st)
+{
+	static const char* names[] = {
+		"DISABLED", "BOOT", "BASIC_SETUP", "JOIN_AP",
+		"TCP_CONNECT", "ONLINE",
+		"MQTT_DISCONN", "MQTT_CFG", "MQTT_CONN",
+		"MQTT_OK", "MQTT_SUB", "ERROR"
+	};
+	if (st <= ESP8266_STATE_ERROR)
+		return names[st];
+	return "UNKNOWN";
+}
 
-/* Global Variable */
-volatile uint32_t led_toggle_count = 0;
+/* ================= ESP8266 事件回调 ================= */
 
-/*********************************************************************
- * @fn      TIM_1ms_Callback
- *
- * @brief   定时器1ms回调函数（用户实现）
- *          每1ms调用一次，可在此执行周期性任务
- *
- * @return  none
- */
-// void TIM_1ms_Callback(void)
-// {
-//     static uint16_t count = 0;
-//
-//     count++;
-//
-//     // 每500ms翻转一次LED（GPIOC Pin2）
-//     if(count >= 500)
-//     {
-//         count = 0;
-//         GPIO_WriteBit(GPIOC, GPIO_Pin_2,
-//                      (BitAction)(1 - GPIO_ReadOutputDataBit(GPIOC, GPIO_Pin_2)));
-//         led_toggle_count++;
-//     }
-// }
+static void on_esp8266_event(esp8266_event_t evt, esp8266_state_t state, void *user)
+{
+	(void)user;
+
+	switch (evt)
+	{
+	case ESP8266_EVENT_STATE_CHANGED:
+		printf("[WiFi] state -> %s\r\n", esp8266_state_name(state));
+		break;
+	case ESP8266_EVENT_WIFI_CONNECTED:
+		printf("[WiFi] WiFi connected\r\n");
+		break;
+	case ESP8266_EVENT_WIFI_DISCONNECTED:
+		printf("[WiFi] WiFi disconnected\r\n");
+		break;
+	case ESP8266_EVENT_MQTT_CONNECTED:
+		printf("[WiFi] MQTT connected\r\n");
+		mqtt_app_notify_connected();
+		break;
+	case ESP8266_EVENT_MQTT_SUBSCRIBED:
+		printf("[WiFi] MQTT subscribed to: %s\r\n", ESP8266_MQTT_SUB_TOPIC);
+		mqtt_app_notify_connected();
+		break;
+	case ESP8266_EVENT_MQTT_DISCONNECTED:
+		printf("[WiFi] MQTT disconnected\r\n");
+		mqtt_app_notify_disconnected();
+		break;
+	case ESP8266_EVENT_ERROR:
+		printf("[WiFi] ERROR in state %s\r\n", esp8266_state_name(state));
+		break;
+	default:
+		break;
+	}
+}
+
+/* ================= 认证结果包装回调 ================= */
+
+static void on_auth_result(auth_method_t method, auth_result_t result, const user_entry_t *user)
+{
+	/* 通知 UI 更新 */
+	door_status_ui_on_auth_result(method, result, user);
+	/* 通知 MQTT 应用层上报 */
+	mqtt_app_on_auth(method, result, user);
+}
 
 /*********************************************************************
  * @fn      main
@@ -77,78 +92,84 @@ int main(void)
 	SystemCoreClockUpdate();
 	Delay_Init();
 
-	/* 初始化USART1 DMA接收 (115200波特率) */
+	/* 初始化调试串口 USART3 (PB10-TX, 115200) 用于 printf 输出 */
+	USART_Printf_Init(115200);
+
+	/* 初始化USART1 DMA接收 (115200波特率) 用于 ESP8266 通信 */
 	USART1_DMA_RX_FullInit(115200, &g_usart1_ringbuf);
 
 	/* 打印系统信息 */
 	printf("\r\n=================================\r\n");
 	printf("System Clock: %d Hz\r\n", SystemCoreClock);
 	printf("Chip ID: %08x\r\n", DBGMCU_GetCHIPID());
-	printf("CH32V30x LCD + UART DMA Demo\r\n");
+	printf("CH32V30x Door Access Control\r\n");
 	printf("=================================\r\n\r\n");
 
 	/* 初始化1ms定时器 */
 	TIM_1ms_Init();
 
 	/* 初始化门禁控制模块 */
-	printf("[INFO] Initializing door control...\r\n");
+	printf("[INIT] Door control...\r\n");
 	door_control_init();
-	printf("[INFO] Door control initialized!\r\n");
 
 	/* 初始化用户数据库和日志 */
-	printf("[INFO] Initializing user database...\r\n");
+	printf("[INIT] User database & access log...\r\n");
 	user_db_init();
-	printf("[INFO] Initializing access log...\r\n");
 	access_log_init();
 
 	/* 初始化认证管理器 */
-	printf("[INFO] Initializing auth manager...\r\n");
+	printf("[INIT] Auth manager...\r\n");
 	auth_manager_init();
 	user_admin_init();
-	printf("[INFO] Auth system initialized!\r\n");
 
 	/* 初始化LCD显示屏和状态UI */
-	printf("[INFO] Initializing ST7735S LCD...\r\n");
-	LCD_Init();            // 初始化SPI2和ST7735S屏幕
-	door_status_ui_init(); // 使用状态显示界面替代菜单系统
-	printf("[INFO] LCD initialized successfully!\r\n");
+	printf("[INIT] ST7735S LCD...\r\n");
+	LCD_Init();
+	door_status_ui_init();
 
-	/* 注册认证管理器回调 */
-	auth_manager_set_callback(door_status_ui_on_auth_result);
+	/* 注册认证管理器回调（包装回调同时通知 UI 和 MQTT） */
+	auth_manager_set_callback(on_auth_result);
 	auth_manager_set_start_callback(door_status_ui_on_auth_start);
-
-	/* 注册密码输入UI回调 */
 	pwd_input_set_ui_callback(door_status_ui_on_password_input);
 
-	/* 显示欢迎界面 */
-	// lcd_welcome_screen();  // 如果需要欢迎界面,取消注释
+	/* 按键初始化 */
 	key_init();
 	matrix_key_init();
-	/* 延迟一下再启动定时器 */
-	Delay_Ms(1000);
-	/* 启动定时器 */
-	TIM_1ms_Start();
+
+	/* 语音模块 */
 	BY8301_Init();
 
-	printf("[INFO] System initialized successfully!\r\n");
-	printf("[INFO] USART1 DMA RX enabled, waiting for data...\r\n");
-	printf("[INFO] Door control system running...\r\n");
-	printf("[INFO] User count: %d, Log count: %d\r\n",
-		   user_db_get_count(), access_log_get_count());
-	printf("[INFO] Master password: 0000 (default)\r\n\r\n");
-
-	printf("\r\n========== 示例2：调度器框架下的自动模式 ==========\r\n");
+	/* RFID 初始化（自动上传卡号+块数据模式） */
+	printf("[INIT] RFID reader...\r\n");
 	RFID_Init(115200);
-	// 设置为自动上传卡号+块8数据
-
 	ret = RFID_SetWorkMode(RFID_MODE_AUTO_ID_BLOCK, 8, 2000);
 	if (ret != RFID_RET_OK)
 	{
-		printf("设置自动模式失败！\r\n");
+		printf("[WARN] RFID set auto mode failed\r\n");
 	}
-	// 等待模块重启
-	Delay_Ms(2000);
-	printf("自动模式已启动，请刷卡...\r\n");
+
+	/* MQTT 应用层初始化（必须在 esp8266 之前，以便回调注册） */
+	printf("[INIT] MQTT app layer...\r\n");
+	mqtt_app_init();
+
+	/* ESP8266 WiFi/MQTT 初始化（非阻塞，状态机由调度器驱动） */
+	/* ESP8266 使用 USART1 (PA9/PA10) 通信，USART1 已在上方初始化 */
+	printf("[INIT] ESP8266 WiFi module...\r\n");
+	esp8266_init();
+	esp8266_set_callbacks(NULL, on_esp8266_event, NULL);
+	esp8266_mqtt_set_on_message(mqtt_app_on_message, NULL);
+	esp8266_connect_wifi(ESP8266_WIFI_SSID, ESP8266_WIFI_PASSWORD);
+	esp8266_connect_mqtt();
+	printf("[INIT] ESP8266 configured: SSID=%s, MQTT=%s:%d\r\n",
+		   ESP8266_WIFI_SSID, ESP8266_MQTT_BROKER_HOST, ESP8266_MQTT_BROKER_PORT);
+
+	/* 延迟后启动调度器 */
+	Delay_Ms(1000);
+	TIM_1ms_Start();
+
+	printf("\r\n[INFO] System ready. Users=%d, Logs=%d\r\n",
+		   user_db_get_count(), access_log_get_count());
+	printf("[INFO] Scheduler running...\r\n\r\n");
 
 	while (1)
 	{

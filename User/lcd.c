@@ -6,10 +6,8 @@
 * Description        : ST7735S LCD绘图函数实现（精简版）
 *********************************************************************************/
 
-#include "lcd.h"
-#include "lcd_init.h"
+#include "bsp_system.h"
 #include "lcdfont.h"
-#include "debug.h"
 
 /**
  * @brief  填充指定矩形区域

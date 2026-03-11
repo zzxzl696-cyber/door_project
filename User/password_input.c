@@ -6,10 +6,7 @@
  * Description        : 密码输入模块实现
  *********************************************************************************/
 
-#include "password_input.h"
-#include "timer_config.h"
-#include "debug.h"
-#include <string.h>
+#include "bsp_system.h"
 
 /* 内部状态 */
 static struct

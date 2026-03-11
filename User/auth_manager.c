@@ -6,14 +6,7 @@
  * Description        : 认证管理器实现
  *********************************************************************************/
 
-#include "auth_manager.h"
-#include "password_input.h"
-#include "timer_config.h"
-#include "by8301.h"
-#include "user_admin.h"
-#include "door_status_ui.h"
-#include "debug.h"
-#include <string.h>
+#include "bsp_system.h"
 
 /* 内部状态 */
 static struct

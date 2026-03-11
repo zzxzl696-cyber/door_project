@@ -6,8 +6,7 @@
 * Description        : USART1 DMA接收模块实现
 *********************************************************************************/
 
-#include "usart1_dma_rx.h"
-#include "debug.h"  // 用于调试输出
+#include "bsp_system.h"
 
 /* 全局变量定义 */
 usart1_dma_rx_t g_usart1_dma_rx = {0};
@@ -144,6 +143,7 @@ void USART1_DMA_RX_FullInit(uint32_t baudrate, ringbuffer_large_t* ringbuf)
     g_usart1_dma_rx.rx_count = 0;
     g_usart1_dma_rx.idle_detected = 0;
     g_usart1_dma_rx.error_flag = 0;
+    g_usart1_dma_rx.dma_last_pos = 0;
 
     // 初始化GPIO
     USART1_GPIO_Init();
@@ -203,8 +203,41 @@ void USART1_DMA_Process_Data(uint8_t* data_ptr, uint16_t data_len)
     }
 }
 
+/**
+ * @brief  从USART1环形缓冲区读取1字节
+ * @param  data: 输出字节指针
+ * @retval 0=成功, -1=无数据
+ */
+int USART1_RX_ReadByte(uint8_t *data)
+{
+    if (g_usart1_dma_rx.user_ringbuf == NULL)
+    {
+        return -1;
+    }
 
+    return ringbuffer_large_read(g_usart1_dma_rx.user_ringbuf, data);
+}
 
+/**
+ * @brief  阻塞式写入USART1（逐字节等待TXE）
+ * @param  data: 数据指针
+ * @param  len: 数据长度
+ * @retval 实际写入字节数
+ */
+uint16_t USART1_TX_Write(const uint8_t *data, uint16_t len)
+{
+    uint16_t i;
 
+    for (i = 0; i < len; i++)
+    {
+        while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
+        {
+            /* 等待发送寄存器空 */
+        }
+        USART_SendData(USART1, data[i]);
+    }
+
+    return len;
+}
 
 

@@ -10,7 +10,6 @@
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 #include "ch32v30x_it.h"
-#include "usart1_dma_rx.h"
 #include "bsp_system.h"
 
 // AS608指纹模块接收缓冲区 (定义在as608.c)
@@ -66,6 +65,7 @@ void DMA1_Channel5_IRQHandler(void)
 {
 	uint16_t data_len = 0;
 	uint8_t *data_ptr = NULL;
+	uint16_t half = USART1_DMA_RX_BUFFER_SIZE / 2;
 
 	// 判断中断类型：半满中断
 	if (DMA_GetITStatus(DMA1_IT_HT5) != RESET)
@@ -74,7 +74,8 @@ void DMA1_Channel5_IRQHandler(void)
 
 		// 处理前半区数据 [0-127]
 		data_ptr = &g_usart1_dma_rx.dma_buffer[0];
-		data_len = 128;
+		data_len = half;
+		g_usart1_dma_rx.dma_last_pos = half;
 	}
 	// 判断中断类型：全满中断
 	else if (DMA_GetITStatus(DMA1_IT_TC5) != RESET)
@@ -82,8 +83,9 @@ void DMA1_Channel5_IRQHandler(void)
 		DMA_ClearITPendingBit(DMA1_IT_TC5);
 
 		// 处理后半区数据 [128-255]
-		data_ptr = &g_usart1_dma_rx.dma_buffer[128];
-		data_len = 128;
+		data_ptr = &g_usart1_dma_rx.dma_buffer[half];
+		data_len = half;
+		g_usart1_dma_rx.dma_last_pos = 0;
 	}
 
 	// 将数据写入环形缓冲区
@@ -106,6 +108,7 @@ void USART1_IRQHandler(void)
 {
 	uint16_t recv_len = 0;
 	uint16_t dma_remain = 0;
+	uint16_t last_pos = g_usart1_dma_rx.dma_last_pos;
 
 	// 检查空闲中断标志
 	if (USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
@@ -121,10 +124,21 @@ void USART1_IRQHandler(void)
 		dma_remain = DMA_GetCurrDataCounter(DMA1_Channel5);
 		recv_len = USART1_DMA_RX_BUFFER_SIZE - dma_remain;
 
-		// 处理数据
-		if (recv_len > 0)
+		// 处理剩余数据（避免与 HT/TC 重复）
+		if (recv_len != last_pos)
 		{
-			USART1_DMA_Process_Data(g_usart1_dma_rx.dma_buffer, recv_len);
+			if (recv_len > last_pos)
+			{
+				USART1_DMA_Process_Data(&g_usart1_dma_rx.dma_buffer[last_pos], (uint16_t)(recv_len - last_pos));
+			}
+			else
+			{
+				USART1_DMA_Process_Data(&g_usart1_dma_rx.dma_buffer[last_pos], (uint16_t)(USART1_DMA_RX_BUFFER_SIZE - last_pos));
+				if (recv_len > 0)
+				{
+					USART1_DMA_Process_Data(&g_usart1_dma_rx.dma_buffer[0], recv_len);
+				}
+			}
 		}
 
 		// 重新启动DMA
@@ -133,6 +147,7 @@ void USART1_IRQHandler(void)
 
 		// 设置空闲标志位
 		g_usart1_dma_rx.idle_detected = 1;
+		g_usart1_dma_rx.dma_last_pos = 0;
 	}
 }
 
